@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
@@ -11,12 +13,16 @@ class EnemyData {
   final Vector2 srcSize;
   final int columns;
   final int rows;
+  final bool canFly;
+  final int speed;
 
   const EnemyData({
     required this.imageName,
     required this.srcSize,
     required this.columns,
     required this.rows,
+    this.canFly = false,
+    required this.speed,
   });
 }
 
@@ -27,11 +33,8 @@ enum EnemyType {
 }
 
 class Enemy extends SpriteAnimationComponent {
-  double speed = 200;
-  late Vector2 _size;
-
-  double textureWidth = 0.0;
-  double textureHeight = 0.0;
+  late EnemyData enemyData;
+  final _random = Random();
 
   final data = {
     EnemyType.angryPig: EnemyData(
@@ -39,63 +42,69 @@ class Enemy extends SpriteAnimationComponent {
       srcSize: Vector2(36, 30),
       columns: 16,
       rows: 1,
+      speed: 250,
     ),
     EnemyType.bat: EnemyData(
       imageName: Assets.bat,
       srcSize: Vector2(46, 30),
       columns: 7,
       rows: 1,
+      canFly: true,
+      speed: 300,
     ),
     EnemyType.rino: EnemyData(
       imageName: Assets.rino,
       srcSize: Vector2(52, 34),
       columns: 6,
       rows: 1,
+      speed: 350,
     ),
   };
 
   final EnemyType enemyType;
 
-  Enemy(this.enemyType);
+  Enemy(this.enemyType) {
+    enemyData = data[enemyType]!;
+  }
 
   @override
   Future<void> onLoad() async {
-    final enemyData = data[enemyType];
-
     final spriteSheet = SpriteSheet.fromColumnsAndRows(
-      image: await Images().load(enemyData!.imageName),
+      image: await Images().load(enemyData.imageName),
       columns: enemyData.columns,
       rows: enemyData.rows,
     )..srcSize.setFrom(enemyData.srcSize);
 
-    animation =
-        spriteSheet.createAnimation(row: 0, from: 0, to: enemyData.columns - 1, stepTime: 0.1);
+    animation = spriteSheet.createAnimation(
+        row: 0, from: 0, to: enemyData.columns - 1, stepTime: 0.1);
+
+    anchor = Anchor.center;
   }
 
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
 
-    
-    textureWidth = data[enemyType]!.srcSize.x;
-    textureHeight = data[enemyType]!.srcSize.y;
+    double scaleFactor =
+        (size.x / numberOfTilesAlongWidth) / enemyData.srcSize.x;
 
-    double scaleFactor = (size.x / numberOfTilesAlongWidth) / textureWidth;
-
-    _size = size;
-    width = textureWidth * scaleFactor;
-    height = textureHeight * scaleFactor;
+    width = enemyData.srcSize.x * scaleFactor;
+    height = enemyData.srcSize.y * scaleFactor;
     x = size.x + width;
-    y = size.y - groundHeight - height;
+    y = size.y - groundHeight - (height / 2);
+
+    if (enemyData.canFly && _random.nextBool()) {
+      y -= height;
+    }
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    x -= speed * dt;
+    x -= enemyData.speed * dt;
 
     if (x < -width) {
-      x = _size.x + width;
+      removeFromParent();
     }
   }
 }

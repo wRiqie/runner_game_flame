@@ -8,6 +8,7 @@ import '../core/constants.dart';
 class Dino extends SpriteAnimationComponent {
   late SpriteAnimation _runAnimation;
   late SpriteAnimation _hitAnimation;
+  late Timer _timer;
 
   double speedY = 0.0;
   double yMax = 0.0;
@@ -33,15 +34,23 @@ class Dino extends SpriteAnimationComponent {
           spriteSheet.createAnimation(row: 0, from: 14, to: 16, stepTime: 0.1);
 
       animation = _runAnimation;
+
+      _timer = Timer(1.2, onTick: () {
+        run();
+      });
+
+      anchor = Anchor.center;
     });
   }
 
   void run() {
     animation = _runAnimation;
+    _timer.stop();
   }
 
   void hit() {
     animation = _hitAnimation;
+    _timer.start();
   }
 
   void jump() {
@@ -57,7 +66,7 @@ class Dino extends SpriteAnimationComponent {
     super.onGameResize(size);
     width = height = size.x / numberOfTilesAlongWidth;
     x = width * 2;
-    y = size.y - groundHeight - height + dinoSpriteEmptySpace;
+    y = size.y - groundHeight - (height / 2) + dinoSpriteEmptySpace;
 
     yMax = y;
   }
@@ -73,5 +82,7 @@ class Dino extends SpriteAnimationComponent {
       y = yMax;
       speedY = 0.0;
     }
+
+    _timer.update(dt);
   }
 }
