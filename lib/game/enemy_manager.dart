@@ -25,6 +25,13 @@ class EnemyManager extends Component with HasGameRef<DinoGame> {
     gameRef.add(newEnemy);
   }
 
+  void reset() {
+    _spawnLevel = 0;
+    _timer = Timer(4, repeat: true, onTick: () {
+      spawnRandomEnemy();
+    });
+  }
+
   @override
   void onMount() {
     super.onMount();

@@ -1,24 +1,26 @@
 import 'package:flame/cache.dart';
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:runner_flame_game/core/assets.dart';
+import 'package:runner_flame_game/game/game.dart';
 
 import '../core/constants.dart';
 
-class Dino extends SpriteAnimationComponent {
+class Dino extends SpriteAnimationComponent with HasGameRef<DinoGame> {
   late SpriteAnimation _runAnimation;
   late SpriteAnimation _hitAnimation;
   late Timer _timer;
 
+  bool isHitting = false;
+
   double speedY = 0.0;
   double yMax = 0.0;
 
+  late ValueNotifier<int> life;
+
   Dino() {
-    // 0 - 3
-    // 4 - 10
-    // 11 - 13
-    // 14 - 16
-    // 17 - 23
+    life = ValueNotifier(3);
 
     Images().load(Assets.dinoSprite).then((value) {
       final spriteSheet = SpriteSheet.fromColumnsAndRows(
@@ -44,18 +46,26 @@ class Dino extends SpriteAnimationComponent {
   }
 
   void run() {
+    isHitting = false;
+
     animation = _runAnimation;
     _timer.stop();
   }
 
   void hit() {
-    animation = _hitAnimation;
-    _timer.start();
+    if (!isHitting) {
+      isHitting = true;
+
+      life.value--;
+
+      animation = _hitAnimation;
+      _timer.start();
+    }
   }
 
   void jump() {
-    if(isOnGround) {
-      speedY = -600;
+    if (isOnGround) {
+      speedY = -500;
     }
   }
 
@@ -64,9 +74,9 @@ class Dino extends SpriteAnimationComponent {
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    width = height = size.x / numberOfTilesAlongWidth;
+    width = height = size.x / Constants.numberOfTilesAlongWidth;
     x = width * 2;
-    y = size.y - groundHeight - (height / 2) + dinoSpriteEmptySpace;
+    y = size.y - Constants.groundHeight - (height / 2) + Constants.dinoSpriteEmptySpace;
 
     yMax = y;
   }
@@ -74,7 +84,7 @@ class Dino extends SpriteAnimationComponent {
   @override
   void update(double dt) {
     super.update(dt);
-    speedY += gravity * dt;
+    speedY += Constants.gravity * dt;
 
     y += speedY * dt;
 

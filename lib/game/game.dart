@@ -1,8 +1,10 @@
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flame/input.dart';
 import 'package:flame/parallax.dart';
+import 'package:flutter/material.dart';
 import 'package:runner_flame_game/core/assets.dart';
+import 'package:runner_flame_game/core/constants.dart';
 import 'package:runner_flame_game/game/dino.dart';
 import 'package:runner_flame_game/game/enemy.dart';
 import 'package:runner_flame_game/game/enemy_manager.dart';
@@ -11,10 +13,22 @@ class DinoGame extends FlameGame with TapDetector {
   late Dino _dino;
   late ParallaxComponent _parallaxComponent;
 
-  final _scoreText = TextComponent();
+  late TextComponent _scoreText;
   int score = 0;
 
   late EnemyManager _enemyManager;
+
+  ValueNotifier<int> get playerLife => _dino.life;
+
+  DinoGame() {
+    var style = const TextStyle(
+      fontFamily: 'Audiowide',
+      fontSize: 22,
+      color: Colors.white,
+    );
+    var paint = TextPaint(style: style);
+    _scoreText = TextComponent(textRenderer: paint);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -22,6 +36,8 @@ class DinoGame extends FlameGame with TapDetector {
     _parallaxComponent = await _createParallax();
     _scoreText.text = score.toString();
     _enemyManager = EnemyManager();
+
+    overlays.add(Constants.hud);
 
     add(_parallaxComponent);
     add(_dino);
@@ -65,6 +81,34 @@ class DinoGame extends FlameGame with TapDetector {
     );
   }
 
+  void pauseGame() {
+    pauseEngine();
+    overlays.add(Constants.resume);
+  }
+
+  void resumeGame() {
+    overlays.remove(Constants.resume);
+    resumeEngine();
+  }
+
+  void _gameOver() {
+    pauseEngine();
+
+    overlays.remove(Constants.hud);
+    overlays.add(Constants.gameOver);
+  }
+
+  void reset() {
+    score = 0;
+    _dino.life.value = 3;
+    _dino.run();
+    _enemyManager.reset();
+
+    children.whereType<Enemy>().forEach((enemy) {
+      remove(enemy);
+    });
+  }
+
   @override
   void onTapDown(TapDownInfo info) {
     super.onTapDown(info);
@@ -74,20 +118,32 @@ class DinoGame extends FlameGame with TapDetector {
   @override
   void onGameResize(Vector2 canvasSize) {
     super.onGameResize(canvasSize);
-    _scoreText.position = Vector2((canvasSize.x / 2) - (_scoreText.width / 2), 10);
+    _scoreText.position =
+        Vector2((canvasSize.x / 2) - (_scoreText.width / 2), 10);
   }
 
   @override
   void update(double dt) {
     super.update(dt);
+    if (_dino.life.value <= 0) {
+      _gameOver();
+      return;
+    }
+
     score += (60 * dt).toInt();
     _scoreText.text = score.toString();
 
     // TODO adicionar colisão pelo mixin
     children.whereType<Enemy>().forEach((enemy) {
-      if(_dino.distance(enemy) < 20) {
+      if (_dino.distance(enemy) < 20) {
         _dino.hit();
       }
     });
+  }
+
+  @override
+  void lifecycleStateChange(AppLifecycleState state) {
+    super.lifecycleStateChange(state);
+    if (state != AppLifecycleState.resumed) pauseGame();
   }
 }

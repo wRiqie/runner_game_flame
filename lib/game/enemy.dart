@@ -86,12 +86,12 @@ class Enemy extends SpriteAnimationComponent {
     super.onGameResize(size);
 
     double scaleFactor =
-        (size.x / numberOfTilesAlongWidth) / enemyData.srcSize.x;
+        (size.x / Constants.numberOfTilesAlongWidth) / enemyData.srcSize.x;
 
     width = enemyData.srcSize.x * scaleFactor;
     height = enemyData.srcSize.y * scaleFactor;
     x = size.x + width;
-    y = size.y - groundHeight - (height / 2);
+    y = size.y - Constants.groundHeight - (height / 2);
 
     if (enemyData.canFly && _random.nextBool()) {
       y -= height;
